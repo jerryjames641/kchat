@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroBlog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .login-form, .post-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        button {
+            background: #1da1f2;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0d8bd9;
+        }
+        .logout-btn {
+            background: #dc3545;
+            width: auto;
+            float: right;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        .post {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .post-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .post-content {
+            margin: 10px 0;
+            line-height: 1.4;
+        }
+        .post-actions {
+            margin-top: 10px;
+        }
+        .edit-btn, .delete-btn {
+            background: #6c757d;
+            width: auto;
+            padding: 5px 10px;
+            margin-right: 5px;
+            font-size: 12px;
+        }
+        .delete-btn {
+            background: #dc3545;
+        }
+        .edit-btn:hover {
+            background: #5a6268;
+        }
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+        }
+        .user-info {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .demo-accounts {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MicroBlog</h1>
+        </div>
+
+        <div id="demo-accounts" class="demo-accounts">
+            <strong>Demo Accounts:</strong><br>
+            alice/pass123 | bob/secret456 | charlie/test789 | diana/hello321 | eve/world654
+        </div>
+
+        <div id="login-section" class="login-form">
+            <h3>Login</h3>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+
+        <div id="app-section" style="display: none;">
+            <div class="user-info">
+                Welcome, <span id="current-user"></span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+                <div style="clear: both;"></div>
+            </div>
+
+            <div class="post-form">
+                <h3>Create Post</h3>
+                <textarea id="post-content" placeholder="What's happening?" maxlength="102400"></textarea>
+                <div class="char-count">
+                    <span id="char-count">0</span>/102400
+                </div>
+                <button onclick="createPost()">Post</button>
+            </div>
+
+            <div id="posts-container">
+                <h3>Posts</h3>
+                <div id="posts-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo user accounts
+        const users = {
+            'alice': 'pass123',
+            'bob': 'secret456', 
+            'charlie': 'test789',
+            'diana': 'hello321',
+            'eve': 'world654'
+        };
+
+        let currentUser = null;
+        let posts = [];
+        let postIdCounter = 1;
+
+        // Character counter
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('post-content');
+            const charCount = document.getElementById('char-count');
+            
+            if (textarea && charCount) {
+                textarea.addEventListener('input', function() {
+                    charCount.textContent = this.value.length;
+                });
+            }
+        });
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (users[username] && users[username] === password) {
+                currentUser = username;
+                document.getElementById('current-user').textContent = username;
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('app-section').style.display = 'block';
+                document.getElementById('demo-accounts').style.display = 'none';
+                loadPosts();
+            } else {
+                alert('Invalid username or password!');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('app-section').style.display = 'none';
+            document.getElementById('demo-accounts').style.display = 'block';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('post-content').value = '';
+            document.getElementById('char-count').textContent = '0';
+        }
+
+        function createPost() {
+            const content = document.getElementById('post-content').value.trim();
+            
+            if (!content) {
+                alert('Please enter some content!');
+                return;
+            }
+
+            if (content.length > 102400) {
+                alert('Post exceeds maximum length of 102400 characters!');
+                return;
+            }
+
+            const post = {
+                id: postIdCounter++,
+                author: currentUser,
+                content: content,
+                timestamp: new Date().toLocaleString(),
+                edited: false
+            };
+
+            posts.unshift(post);
+            document.getElementById('post-content').value = '';
+            document.getElementById('char-count').textContent = '0';
+            loadPosts();
+        }
+
+        function editPost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post || post.author !== currentUser) return;
+
+            const newContent = prompt('Edit your post:', post.content);
+            if (newContent !== null && newContent.trim() !== '') {
+                if (newContent.length > 102400) {
+                    alert('Post exceeds maximum length of 102400 characters!');
+                    return;
+                }
+                post.content = newContent.trim();
+                post.edited = true;
+                post.timestamp = new Date().toLocaleString() + ' (edited)';
+                loadPosts();
+            }
+        }
+
+        function deletePost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post || post.author !== currentUser) return;
+
+            if (confirm('Are you sure you want to delete this post?')) {
+                posts = posts.filter(p => p.id !== postId);
+                loadPosts();
+            }
+        }
+
+        function loadPosts() {
+            const postsList = document.getElementById('posts-list');
+            
+            if (posts.length === 0) {
+                postsList.innerHTML = '<p>No posts yet. Be the first to post!</p>';
+                return;
+            }
+
+            postsList.innerHTML = posts.map(post => `
+                <div class="post">
+                    <div class="post-header">
+                        @${post.author} • ${post.timestamp}
+                    </div>
+                    <div class="post-content">
+                        ${post.content.replace(/\n/g, '<br>')}
+                    </div>
+                    ${post.author === currentUser ? `
+                        <div class="post-actions">
+                            <button class="edit-btn" onclick="editPost(${post.id})">Edit</button>
+                            <button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Initialize character counter on page load
+        window.addEventListener('load', function() {
+            const textarea = document.getElementById('post-content');
+            const charCount = document.getElementById('char-count');
+            
+            if (textarea && charCount) {
+                textarea.addEventListener('input', function() {
+                    charCount.textContent = this.value.length;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
